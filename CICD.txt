@@ -1,4 +1,4 @@
-enkins Nodes
+Jenkins Nodes
 --> Master:
 		Schedule the build job
 		Dispaches build to the slaves for actual job execution
