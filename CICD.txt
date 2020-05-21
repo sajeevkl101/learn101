@@ -1,0 +1,206 @@
+enkins Nodes
+--> Master:
+		Schedule the build job
+		Dispaches build to the slaves for actual job execution
+		Monitoring slave and recording the build results
+		When slaves are registered with master, master starts distributing jobs to slaves
+--> Executor:
+		Is a seperate stream of builds to be run on nodes in parellel
+		There can be multiple executors/jobs on a single nodes
+		
+Directives:
+	Discard Old Builds: This is to manage old builds. If you keep all old build that will fill up disk space
+		Options:
+			Strategy: Log Rotation[Drop-down]
+			Days to keep Builds: 30
+			Max # of builds to keep: 5
+			Status to keep: Success, Unstable, Failure, NotBuilt
+			
+	GitHub project: Git hub url from where to pull the project code
+	
+	This Project is Parameterized:
+		String Parameter:
+			Defines a simple text parameter, where users can enter a string value, 
+			which you can use during a build, either as an environment variable, or 
+			through variable substitution in some other parts of the configuration.
+			Name: Name of the Parameter
+				These parameters are exposed to build as environment variables.
+			
+			e.g Maven Project
+				Name: BaseUrl
+				Under Build Section
+					Root POM: pom.xml
+					Goals: clean test -Dcustomproperty="$BaseUrl"
+				Now your project should have Build with parameters option. 
+				Click on Build with parameters. This will give you a Text box to enter the parameter as below
+					BaseUrl: <yourURLhear>
+				Click on Build
+				NOTE: This build won't succeed unless the passing parameter is not utilized in the automation script. 
+					So script has to be modified to retrieve the passing variable.
+					String BaseURL= System.getProperty("customproperty");
+		NodeLabel Parameter Plugin: If you install this plugin you would get Node and Label option as another two different parameters
+			Node: 	Defines a list of nodes where this job could potentially be executed on. 
+					The job can be executed on multiple nodes/slaves, one after the other (concurrent execution is currently not supported).
+			Label:	Defines a label used to identify/restrict the node where this job should run on
+	
+	Throttle Builds: 
+		Its like Number of builds per Time Period
+		If you choose 2 builds and Time Period is Hour, then it says : Approximately 30 minutes between builds
+		If 10 builds, then : Approximately 6 minutes between builds and so on
+	
+	Disable this project:
+		When this option is checked, no new builds of this project will be executed. 
+		This can be helpful when you want to temporarily prevent a project from being built.
+		
+	Execute concurrent builds if necessary:
+		When this option is checked, multiple builds of this project may be executed in parallel.
+		By default, only a single build of a project is executed at a time — 
+		 any other requests to start building that project will remain in the build queue until the first build is complete.
+		But with this option enabled, if there are enough build executors available that can handle this project, 
+		 then multiple builds of this project will take place in parallel. 
+		If there are not enough available executors at any point, any further build requests will be held in the build queue as normal.
+		
+	Build Triggers:
+		Trigger build remotely:
+			By passing Authentication Token you can trigger the build from other servers by using commands/scripts
+			Here you will pass the token, by using which other users can fire the url remotely from other systems
+			e.g <jenkinsURL:8080/project_name/token=<token_key>
+			By running this on any browser followed by your login would fire the configured job
+			Token can be anything like : abcd123
+			
+		Build After other projects are built
+			As name says, this is dependant on other projects to complete
+			condition: When stable/unstable/failed
+			
+		Build Periodically: Just like crontab way of scheduling a job
+		
+		Instead of Poll SCM install Github plugin which gives below option:
+		Github hook trigger for GITscm polling:
+			Select the Github Project and paste the git url from browser
+			In SCM section, select version control as 'git' and paste git project url [<url>.git]
+			Then Goto settings of the github project, select webhook and add the jenkins URL 
+			https://<jenkinsIP:8080>/github-webhook
+			The github will sent a POST to jenkins whenever changes in code, so that jenkins will runt the build again
+			But its rarely used in any environment since code push would happen every 10 mins
+			So running the job would not make any sense unless otherwise its needed
+			
+	Build Environments:
+		Delete workspace before build starts:
+			This will delete the project from the jenkins workspace before starting of new build
+		Abort the build if it's stuck:
+		
+
+Plug-in configuration:
+	Git:
+		Install git plugin
+		install git package locally on jenkins server
+		In jenkins: Manage Jenkins->global Tool configuration->under git->add git
+			Name: git
+			Path: /bin/git
+	Maven:
+		Name: mvn
+		Choose auto install and version to be installed
+		
+Jobs Examples
+	Maven:
+		Check out source code
+		Compile the code
+		Run the tests
+		Package the project
+	Checkstyle is a plugin which would help to get code integrety
+		when this is added in Maven goal e.g 'clean install checkstyle' would check the code
+		This will give the warnings, errors, fixes etc..
+	JDK: Install yum install java-1.8.0-openjdk-devel
+		vi .bash.profile and add below path at the end
+		export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.232.b09-0.el7_7.x86_64
+		export JRE_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.232.b09-0.el7_7.x86_64/jre
+		
+		Check and install JDK plugin
+		Goto Manage Jenkins > Global Tool Configuration> JDK
+		Name: jdk 
+		JAVA_HOME: /usr/lib/jvm/java-1.8.0-openjdk-1.8.0.232.b09-0.el7_7.x86_64/ --> same as above path
+		Error: 
+			No JAVA_HOME path is set -> when you dont set the path or not jdk package is installed
+			JAVA_HOME should point to a JDK not a JRE -> When JAVA_HOME path dont have bin folder under it
+CICD:	
+https://dzone.com/articles/learn-how-to-setup-a-cicd-pipeline-from-scratch
+--->CICD cycle
+	1. Continuous Developement
+		Plan
+		Code
+	2. Continuous Testing
+		Build 
+		Test
+	3. Continuous Integration: 
+		Is a process of Automated Build and Automated test
+		Helps to detect the errors and locate them more easily
+		
+	
+	4. Continuous Developement
+<<-
+Plugins
+--->For Deploying war files
+	DEPLOY TO CONTAINER
+	Now you can see this in Add post-build action
+	
+	"Deploy war/ear to a Container"
+	
+	Details tobe updated
+	-->WAR/EAR Files : war/ear files to deploy. Relative to the workspace root. Or "**/*.war"
+	-->Context path: Full name of your war file or you can ignore
+	-->Container <Add Container> : Which application server you want to deploy like
+		Glassfish
+		JBoss
+		Tomcat
+		and its different versions in each line
+	
+		Selected Tomcat 8.x which asks below info
+		Credential: Select from the list or add 
+		Provide your Tomcat URL : http://<IP>:8080
+		
+	--><Checkbox> Deploy on Failure
+	
+	Save your pipeline job and run it
+	Now you can refresh the Tomcat URL or navigate to the path on which hieararchy you published new changes
+	<<-
+--->Send Build artifacts over SSH
+	PUBLISH OVER SSH
+	
+	Goto Manager Jenkins > Configure Systems > Goto Publish over SSH > Click on Add in SSH Servers
+	Update following details:
+		Name: ansible_server
+		Hostname: <Private IP>
+		Username: ansadmin
+		Click Check box: User Password based authentication
+		Password: Password for user ansadmin
+		
+	Click on Test Connection and confirm its success
+	Apply and Save
+	
+<<-	
+--->Credentials
+	Type:
+		Username with Password
+		
+<<-
+--->AWS 'S3 publisher' plugin
+	A. Pre-Requisites:
+		1. Jenkins is installed on AWS EC2 Instance
+		2. Create S3 Bucket
+	B. Create a IAM Role 
+		1. Choose EC2 Instance
+		2. Policy: AmazonS3FullAccess
+		3. Role Name: s3fullaccess
+		4. Create
+	C. Goto EC2 Instance page:
+		1. Select EC2 Instance
+		2. Click on Actions
+		3. Instance Settings and then Attach/Replace IAM Role
+		4. Select IAM role and apply
+	D. Goto Jenkins
+		1. Install S3 publisher plugin 
+		2. Goto Manage Jenkins --> Configure Systems
+		3. Under Amazon S3 profiles:
+			a. Profile Name: S3-Artifact-Demo
+			b. Click on 'Use IAM Role'
+		4. Apply, Save
